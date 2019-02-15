@@ -50,17 +50,19 @@ func (rd *respReader) read() (Resp, error) {
 	}
 	switch typ {
 	case '$':
-		return rd.readString()
+		return rd.readString(false)
 	case '*':
 		array, err := rd.readArray()
 		return Resp{Type: '*', Array: array}, err
+	case '+':
+		return rd.readString(true)
 	default:
 		log.Printf("unsupported typ %c", typ)
 		return nullResp, fmt.Errorf("unsupported typ %c", typ)
 	}
 }
 
-func (rd *respReader) readString() (Resp, error) {
+func (rd *respReader) readString(isSimpleString bool) (Resp, error) {
 	l, err := rd.readPrefixLen()
 	if err != nil {
 		return nullResp, err
@@ -70,8 +72,12 @@ func (rd *respReader) readString() (Resp, error) {
 	if err != nil {
 		return nullResp, err
 	}
+	var typ byte = '$'
+	if isSimpleString {
+		typ = '+'
+	}
 	return Resp{
-		Type:  '$',
+		Type:  typ,
 		Value: buf,
 	}, nil
 }
@@ -113,8 +119,6 @@ func (rd *respReader) readLine(l int) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	// log.Printf("len(b) = %d; l = %d", len(b), l)
-	// log.Printf("b %v", b)
 	if len(b) != l+2 || !bytes.HasSuffix(b, []byte("\r\n")) {
 		return nil, errors.New("invalid delim or content length")
 	}
