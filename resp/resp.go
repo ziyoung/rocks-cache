@@ -29,21 +29,12 @@ type Resp struct {
 
 var nullResp = Resp{}
 
-func (r Resp) String() string {
-	switch r.Type {
-	case '+', '-', ':', '$':
-		return string(r.Value)
-	case '*':
-		return fmt.Sprintf("%v", r.Array)
-	}
-	return ""
-}
-
-type respReader struct {
+// Reader reads value
+type Reader struct {
 	rd *bufio.Reader
 }
 
-func (rd *respReader) read() (Resp, error) {
+func (rd *Reader) read() (Resp, error) {
 	typ, err := rd.rd.ReadByte()
 	if err != nil {
 		return nullResp, err
@@ -62,7 +53,7 @@ func (rd *respReader) read() (Resp, error) {
 	}
 }
 
-func (rd *respReader) readString(isSimpleString bool) (Resp, error) {
+func (rd *Reader) readString(isSimpleString bool) (Resp, error) {
 	l, err := rd.readPrefixLen()
 	if err != nil {
 		return nullResp, err
@@ -82,7 +73,7 @@ func (rd *respReader) readString(isSimpleString bool) (Resp, error) {
 	}, nil
 }
 
-func (rd *respReader) readArray() ([]Resp, error) {
+func (rd *Reader) readArray() ([]Resp, error) {
 	l, err := rd.readPrefixLen()
 	if err != nil {
 		return nil, err
@@ -98,7 +89,7 @@ func (rd *respReader) readArray() ([]Resp, error) {
 	return buf, nil
 }
 
-func (rd *respReader) readPrefixLen() (int, error) {
+func (rd *Reader) readPrefixLen() (int, error) {
 	tmp, err := rd.rd.ReadString('\n')
 	if err != nil {
 		return 0, err
@@ -114,7 +105,7 @@ func (rd *respReader) readPrefixLen() (int, error) {
 	return l, nil
 }
 
-func (rd *respReader) readLine(l int) ([]byte, error) {
+func (rd *Reader) readLine(l int) ([]byte, error) {
 	b, err := rd.rd.ReadBytes('\n')
 	if err != nil {
 		return nil, err
@@ -126,9 +117,50 @@ func (rd *respReader) readLine(l int) ([]byte, error) {
 }
 
 // todo
-// func (rd *respReader) readInt(Resp, error) {
+// func (rd *Reader) readInt(Resp, error) {
 // }
 
-func newRespReader(rd io.Reader) *respReader {
-	return &respReader{bufio.NewReader(rd)}
+// NewReader creates a Reader
+func NewReader(rd io.Reader) *Reader {
+	return &Reader{bufio.NewReader(rd)}
+}
+
+// Writer write Resp response
+type Writer struct {
+	wr io.Writer
+}
+
+// Error builds an error
+func (wr *Writer) Error(s string) {
+	fmt.Fprintf(wr.wr, "-%s\r\n", s)
+}
+
+// SimpleString builds a simple string
+func (wr *Writer) SimpleString(s string) {
+	fmt.Fprintf(wr.wr, "+%s\r\n", s)
+}
+
+// BulkString builds a bulk string
+func (wr *Writer) BulkString(s string) {
+	fmt.Fprintf(wr.wr, "$%d\r\n%s\r\n", len(s), s)
+}
+
+// Null builds null
+func (wr *Writer) Null() {
+	wr.wr.Write([]byte("-1\r\n"))
+}
+
+// Integer builds a integer string
+func (wr *Writer) Integer(v int64) {
+	fmt.Fprintf(wr.wr, ":%d\r\n", v)
+}
+
+// Array builds an array
+func (wr *Writer) Array(l int) {
+	fmt.Fprintf(wr.wr, "*%d\r\n", l)
+}
+
+// NewWrite creates a new Write
+func NewWrite(wr io.Writer) *Writer {
+	return &Writer{wr: wr}
 }

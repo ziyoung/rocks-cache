@@ -8,7 +8,7 @@ import (
 
 func TestReadResp(t *testing.T) {
 	input := "*3\r\n$3\r\nset\r\n$6\r\nleader\r\n$7\r\nCharlie\r\n"
-	rd := newRespReader(strings.NewReader(input))
+	rd := NewReader(strings.NewReader(input))
 	resp, err := rd.read()
 	if err != nil {
 		t.Error(err)

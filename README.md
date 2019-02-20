@@ -1,8 +1,8 @@
 ## rocks-cache
 
-根据 Redis 协议规范，先解析 Redis 各个命令。待实现的命令如下：
+根据 Redis 协议规范，先解析 Redis 各个命令。
 
-### string（字符串）
+<!-- ### string（字符串）
 
 > 过期机制暂先不做
 
@@ -33,4 +33,4 @@
 - [ ] sadd
 - [ ] smembers
 - [ ] scard
-- [ ] spop
+- [ ] spop -->
